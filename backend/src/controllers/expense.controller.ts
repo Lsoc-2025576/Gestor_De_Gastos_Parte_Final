@@ -1,72 +1,99 @@
 import type { Request, Response } from 'express';
-import { ExpenseService } from '../services/expense.service.js';
+import { ExpenseService } from '../services/expense.services.js';
+import type { CreateExpenseDto, UpdateExpenseDto } from '../dto/expense.dto.js';
 
 export class ExpenseController {
   static async getAll(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req as any).user.userId;
-      const expenses = await ExpenseService.getAllExpenses(userId);
-      res.json({ status: 'success', data: { expenses } });
+      const userId = (req as any).user?.userId;
+      if (!userId) {
+        res.status(401).json({ error: 'No autorizado' });
+        return;
+      }
+      const data = await ExpenseService.getAllExpenses(userId);
+      res.json({ data });
     } catch (error: any) {
-      res.status(500).json({ status: 'error', message: error.message || 'Error al obtener gastos' });
+      res.status(500).json({ error: error.message || 'Error interno al obtener los gastos' });
     }
   }
 
   static async getSummary(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req as any).user.userId;
+      const userId = (req as any).user?.userId;
+      if (!userId) {
+        res.status(401).json({ error: 'No autorizado' });
+        return;
+      }
       const summary = await ExpenseService.getSummary(userId);
-      res.json({ status: 'success', data: { summary } });
+      res.json({ data: summary });
     } catch (error: any) {
-      res.status(500).json({ status: 'error', message: error.message || 'Error al obtener resumen de gastos' });
+      res.status(500).json({ error: error.message || 'Error al obtener el resumen de gastos' });
     }
   }
 
   static async create(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req as any).user.userId;
-      const expense = await ExpenseService.createExpense(userId, req.body);
-      res.status(201).json({ status: 'success', data: { expense } });
+      const userId = (req as any).user?.userId;
+      if (!userId) {
+        res.status(401).json({ error: 'No autorizado' });
+        return;
+      }
+      const dto: CreateExpenseDto = req.body;
+      const expense = await ExpenseService.createExpense(userId, dto);
+      res.status(201).json({ message: 'Gasto creado exitosamente', data: expense });
     } catch (error: any) {
-      res.status(400).json({ status: 'error', message: error.message || 'Error al crear gasto' });
+      res.status(500).json({ error: error.message || 'Error al crear el gasto' });
     }
   }
 
   static async update(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req as any).user.userId;
-      const paramId = req.params['id'];
-      const rawId = Array.isArray(paramId) ? paramId[0] : paramId;
-      const id = parseInt(rawId ?? '', 10);
+      const userId = (req as any).user?.userId;
+      if (!userId) {
+        res.status(401).json({ error: 'No autorizado' });
+        return;
+      }
+      
+      const rawId = req.params.id;
+      const idStr = Array.isArray(rawId) ? rawId[0] : rawId;
+      const id = Number(idStr);
 
       if (isNaN(id)) {
-        res.status(400).json({ status: 'error', message: 'ID de gasto inválido' });
+        res.status(400).json({ error: 'ID de gasto inválido' });
         return;
       }
 
-      const expense = await ExpenseService.updateExpense(id, userId, req.body);
-      res.json({ status: 'success', data: { expense } });
+      const dto: UpdateExpenseDto = req.body;
+      const expense = await ExpenseService.updateExpense(id, userId, dto);
+      res.json({ message: 'Gasto actualizado exitosamente', data: expense });
     } catch (error: any) {
-      res.status(400).json({ status: 'error', message: error.message || 'Error al actualizar gasto' });
+      const status = error.message.includes('no encontrado') ? 404 : 500;
+      res.status(status).json({ error: error.message || 'Error al actualizar el gasto' });
     }
   }
 
   static async delete(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req as any).user.userId;
-      const paramId = req.params['id'];
-      const rawId = Array.isArray(paramId) ? paramId[0] : paramId;
-      const id = parseInt(rawId ?? '', 10);
+      const userId = (req as any).user?.userId;
+      if (!userId) {
+        res.status(401).json({ error: 'No autorizado' });
+        return;
+      }
+
+      const rawId = req.params.id;
+      const idStr = Array.isArray(rawId) ? rawId[0] : rawId;
+      const id = Number(idStr);
 
       if (isNaN(id)) {
-        res.status(400).json({ status: 'error', message: 'ID de gasto inválido' });
+        res.status(400).json({ error: 'ID de gasto inválido' });
         return;
       }
 
       await ExpenseService.deleteExpense(id, userId);
-      res.json({ status: 'success', message: 'Gasto eliminado correctamente' });
+      res.json({ message: 'Gasto eliminado exitosamente' });
     } catch (error: any) {
-      res.status(400).json({ status: 'error', message: error.message || 'Error al eliminar gasto' });
+      const status = error.message.includes('no encontrado') ? 404 : 500;
+      res.status(status).json({ error: error.message || 'Error al eliminar el gasto' });
     }
   }
 }

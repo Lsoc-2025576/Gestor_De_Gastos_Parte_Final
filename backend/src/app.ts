@@ -9,6 +9,7 @@ import { errorHandler, NotFoundError } from './middlewares/error-handler.middlew
 import incomeRoutes from './routes/income.routes.js';
 import expenseRoutes from './routes/expense.routes.js';
 
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -47,6 +48,11 @@ app.get('/api/protected-route', authenticateToken, (req, res) => {
 app.use((req, res, next) => {
   next(new NotFoundError(`Ruta ${req.method} ${req.path} no encontrada`));
 });
+
+
+
+// ... dentro de la configuración de rutas de tu app:
+app.use('/api/expenses', expenseRoutes);
 
 
 app.use(errorHandler);
