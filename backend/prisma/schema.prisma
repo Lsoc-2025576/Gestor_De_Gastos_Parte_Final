@@ -64,8 +64,9 @@ model Income {
 }
 
 enum ExpenseCategory {
-  ARRIENDO
   SERVICIOS
+  TRANSPORTE
+  SUPER_MERCADO
   OTROS
 }
 
