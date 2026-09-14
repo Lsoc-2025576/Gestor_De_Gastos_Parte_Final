@@ -1,36 +1,30 @@
-export type ExpenseCategory = 'ARRIENDO' | 'SERVICIOS' | 'OTROS';
+export type ExpenseCategory = 'SERVICIOS' | 'TRANSPORTE' | 'SUPER_MERCADO' | 'OTROS';
 
 export interface Expense {
   id: number;
   name: string;
   amount: number;
   category: ExpenseCategory;
-  date: string | Date;
-  description?: string | null;
-  createdAt?: string | Date;
-  updatedAt?: string | Date;
+  date: string;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
   userId: number;
 }
 
-export interface ExpenseCreateDto {
+export interface ExpenseResponse {
+  expenses: Expense[];
+}
+
+export interface ExpenseSummaryResponse {
+  total: number;
+  porCategoria: Record<string, number>;
+}
+
+export interface CreateExpenseDto {
   name: string;
   amount: number;
-  category: ExpenseCategory;
-  date?: string;
-  description?: string;
-}
-
-export interface ExpenseUpdateDto {
-  name?: string;
-  amount?: number;
   category?: ExpenseCategory;
   date?: string;
-  description?: string;
-}
-
-export interface ExpenseSummary {
-  total: number;
-  arriendo: number;
-  servicios: number;
-  otros: number;
+  description?: string | null;
 }
