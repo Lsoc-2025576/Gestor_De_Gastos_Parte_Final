@@ -1,98 +1,93 @@
-import { prisma } from '../config/database.js';
-import { Prisma } from '@prisma/client';
-import type { ExpenseCategory } from '@prisma/client';
+import { PrismaClient, type Expense, ExpenseCategory } from '@prisma/client';
+import type { CreateExpenseDto, UpdateExpenseDto } from '../dto/expense.dto.js';
 
-export interface ExpenseCreateInput {
+const prisma = new PrismaClient();
+
+export interface ExpenseResponse {
+  id: number;
   name: string;
   amount: number;
   category: ExpenseCategory;
-  date?: Date;
-  description?: string | null;
+  date: Date;
+  description: string | null;
+  createdAt: Date;
+  updatedAt: Date;
   userId: number;
 }
 
-export interface ExpenseUpdateInput {
-  name?: string;
-  amount?: number;
-  category?: ExpenseCategory;
-  date?: Date;
-  description?: string | null;
+function toExpenseResponse(expense: Expense & { amount: any }): ExpenseResponse {
+  return {
+    ...expense,
+    amount: Number(expense.amount),
+  };
 }
 
 export class ExpenseRepository {
-  static async findAllByUser(userId: number) {
+  static async findAllByUserId(userId: number): Promise<ExpenseResponse[]> {
     const expenses = await prisma.expense.findMany({
       where: { userId },
-      orderBy: { date: 'desc' }
+      orderBy: { date: 'desc' },
     });
-
-    return expenses.map((exp: any) => ({
-      ...exp,
-      amount: Number(exp.amount)
-    }));
+    return expenses.map(toExpenseResponse);
   }
 
-  static async create(data: ExpenseCreateInput) {
+  static async findById(id: number, userId: number): Promise<ExpenseResponse | null> {
+    const expense = await prisma.expense.findFirst({
+      where: { id, userId },
+    });
+    return expense ? toExpenseResponse(expense) : null;
+  }
+
+  static async create(userId: number, data: CreateExpenseDto): Promise<ExpenseResponse> {
     const expense = await prisma.expense.create({
       data: {
         name: data.name,
-        amount: new Prisma.Decimal(data.amount),
-        category: data.category,
-        ...(data.date ? { date: data.date } : {}),
+        amount: data.amount,
+        category: data.category ?? ExpenseCategory.OTROS,
+        date: data.date ? new Date(data.date) : new Date(),
         description: data.description ?? null,
-        userId: data.userId
-      }
+        userId,
+      },
     });
-
-    return {
-      ...expense,
-      amount: Number(expense.amount)
-    };
+    return toExpenseResponse(expense);
   }
 
-  static async update(id: number, userId: number, data: ExpenseUpdateInput) {
-    const updateData: any = {};
-    if (data.name !== undefined) updateData.name = data.name;
-    if (data.amount !== undefined) updateData.amount = new Prisma.Decimal(data.amount);
-    if (data.category !== undefined) updateData.category = data.category;
-    if (data.date !== undefined) updateData.date = data.date;
-    if (data.description !== undefined) updateData.description = data.description ?? null;
-
+  static async update(id: number, userId: number, data: UpdateExpenseDto): Promise<ExpenseResponse> {
     const expense = await prisma.expense.update({
-      where: { id, userId },
-      data: updateData
+      where: { id },
+      data: {
+        ...(data.name && { name: data.name }),
+        ...(data.amount !== undefined && { amount: data.amount }),
+        ...(data.category && { category: data.category }),
+        ...(data.date && { date: new Date(data.date) }),
+        ...(data.description !== undefined && { description: data.description ?? null }),
+      },
     });
-
-    return {
-      ...expense,
-      amount: Number(expense.amount)
-    };
+    return toExpenseResponse(expense);
   }
 
-  static async delete(id: number, userId: number) {
-    return await prisma.expense.delete({
-      where: { id, userId }
+  static async delete(id: number, userId: number): Promise<void> {
+    await prisma.expense.delete({
+      where: { id },
     });
   }
 
   static async getSummary(userId: number) {
     const expenses = await prisma.expense.findMany({
-      where: { userId }
+      where: { userId },
     });
 
-    let total = 0;
-    let arriendo = 0;
-    let servicios = 0;
-    let otros = 0;
+    const total = expenses.reduce((acc, curr) => acc + Number(curr.amount), 0);
 
-    expenses.forEach((exp: any) => {
-      const amt = Number(exp.amount);
-      total += amt;
-      if (exp.category === 'ARRIENDO') arriendo += amt;
-      else if (exp.category === 'SERVICIOS') servicios += amt;
-      else if (exp.category === 'OTROS') otros += amt;
-    });
+    const porCategoria = expenses.reduce((acc: Record<string, number>, curr) => {
+      const cat = curr.category;
+      acc[cat] = (acc[cat] || 0) + Number(curr.amount);
+      return acc;
+    }, {});
 
-    return { total, arriendo, servicios, otros };
+    return {
+      total,
+      porCategoria,
+    };
   }
 }
