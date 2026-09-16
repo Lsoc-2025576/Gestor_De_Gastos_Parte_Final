@@ -2,7 +2,7 @@ import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { ExpenseService } from '../../services/expense.service';
-import { Expense, ExpenseCategory } from '../../types/expense.types';
+import { Expense } from '../../types/expense.types';
 import { ExpenseModalComponent } from './expense-modal.component';
 import { AuthService } from '../../services/auth.service';
 import { type User } from '../../types/auth.types';
@@ -26,7 +26,6 @@ export class ExpensesComponent implements OnInit {
   expenses = signal<Expense[]>([]);
   isModalOpen = signal(false);
 
-  // Totales y agrupación por categoría para las barras de progreso
   totalGastos = computed(() => this.expenses().reduce((acc, exp) => acc + Number(exp.amount), 0));
 
   gastosPorCategoria = computed(() => {

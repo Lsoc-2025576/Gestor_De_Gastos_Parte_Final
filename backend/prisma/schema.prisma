@@ -24,6 +24,7 @@ model User {
   updatedAt DateTime @updatedAt @map("updated_at")  // Se actualiza automaticamente en cada cambio
   incomes   Income[]
   expenses  Expense[]
+  savings   Savings[]
 
   @@map("users")
 }
@@ -77,11 +78,26 @@ model Expense {
   category    ExpenseCategory @default(OTROS)
   date        DateTime        @default(now())
   description String?
-  createdAt   DateTime        @default(now()) @map("created_at")
-  updatedAt   DateTime        @updatedAt @map("updated_at")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
 
   userId Int  @map("user_id")
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("expenses")
+}
+
+model Savings {
+  id          Int      @id @default(autoincrement())
+  description String
+  amount      Float    @db.DoublePrecision
+  category    String   @default("Fondo de Ahorro")
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("savings")
 }

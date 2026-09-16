@@ -4,6 +4,8 @@ import { RegisterComponent } from './components/register/register';
 import { DashboardComponent } from './components/dashboard/dashboard';
 import { ProfileComponent } from './components/profile/profile';
 import { IngresosComponent } from './components/ingresos/ingresos';
+import { ExpensesComponent } from './components/gastos/expenses';
+import { SavingsComponent } from './components/savings/savings.component';
 import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -14,6 +16,8 @@ export const routes: Routes = [
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
   { path: 'ingresos', component: IngresosComponent, canActivate: [authGuard] },
+  { path: 'gastos', component: ExpensesComponent, canActivate: [authGuard] },
+  { path: 'ahorro', component: SavingsComponent, canActivate: [authGuard] },
 
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: '**', redirectTo: 'login' }

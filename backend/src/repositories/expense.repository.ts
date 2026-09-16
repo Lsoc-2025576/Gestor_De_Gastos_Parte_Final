@@ -1,7 +1,13 @@
 import { PrismaClient, type Expense, ExpenseCategory } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import pkg from 'pg';
 import type { CreateExpenseDto, UpdateExpenseDto } from '../dto/expense.dto.js';
 
-const prisma = new PrismaClient();
+const { Pool } = pkg;
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 export interface ExpenseResponse {
   id: number;

@@ -1,11 +1,12 @@
-import type { Request, Response } from 'express';
+import { type Response } from 'express';
 import { ExpenseService } from '../services/expense.services.js';
 import type { CreateExpenseDto, UpdateExpenseDto } from '../dto/expense.dto.js';
+import { type AuthenticatedRequest } from '../middlewares/auth.middleware.js';
 
 export class ExpenseController {
-  static async getAll(req: Request, res: Response): Promise<void> {
+  static async getAll(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const userId = (req as any).user?.userId;
+      const userId = req.user?.id;
       if (!userId) {
         res.status(401).json({ error: 'No autorizado' });
         return;
@@ -17,9 +18,9 @@ export class ExpenseController {
     }
   }
 
-  static async getSummary(req: Request, res: Response): Promise<void> {
+  static async getSummary(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const userId = (req as any).user?.userId;
+      const userId = req.user?.id;
       if (!userId) {
         res.status(401).json({ error: 'No autorizado' });
         return;
@@ -31,9 +32,9 @@ export class ExpenseController {
     }
   }
 
-  static async create(req: Request, res: Response): Promise<void> {
+  static async create(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const userId = (req as any).user?.userId;
+      const userId = req.user?.id;
       if (!userId) {
         res.status(401).json({ error: 'No autorizado' });
         return;
@@ -46,14 +47,14 @@ export class ExpenseController {
     }
   }
 
-  static async update(req: Request, res: Response): Promise<void> {
+  static async update(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const userId = (req as any).user?.userId;
+      const userId = req.user?.id;
       if (!userId) {
         res.status(401).json({ error: 'No autorizado' });
         return;
       }
-      
+
       const rawId = req.params.id;
       const idStr = Array.isArray(rawId) ? rawId[0] : rawId;
       const id = Number(idStr);
@@ -72,9 +73,9 @@ export class ExpenseController {
     }
   }
 
-  static async delete(req: Request, res: Response): Promise<void> {
+  static async delete(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const userId = (req as any).user?.userId;
+      const userId = req.user?.id;
       if (!userId) {
         res.status(401).json({ error: 'No autorizado' });
         return;

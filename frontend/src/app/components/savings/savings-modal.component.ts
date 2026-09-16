@@ -1,11 +1,11 @@
-import { Component, EventEmitter, Output, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ExpenseService } from '../../services/expense.service';
-import { ExpenseCategory, CreateExpenseDto } from '../../types/expense.types';
+import { SavingsService } from '../../services/savings.service';
+import { CreateSavingDto, Saving } from '../../types/savings.types';
 
 @Component({
-  selector: 'app-expense-modal',
+  selector: 'app-savings-modal',
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
@@ -13,7 +13,9 @@ import { ExpenseCategory, CreateExpenseDto } from '../../types/expense.types';
       <div style="background-color: #ffffff; border: 1px solid #cbd5e1; width: 100%; max-width: 500px; padding: 24px; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); color: #16223f; margin: auto;">
         
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 16px;">
-          <h3 style="font-size: 18px; font-weight: bold; color: #16223f; margin: 0;">Registrar Nuevo Gasto</h3>
+          <h3 style="font-size: 18px; font-weight: bold; color: #16223f; margin: 0;">
+            {{ savingToEdit ? 'Editar Ahorro' : 'Registrar Nuevo Ahorro' }}
+          </h3>
           <button (click)="close.emit()" style="background: none; border: none; color: #64748b; font-size: 24px; font-weight: bold; cursor: pointer;">&times;</button>
         </div>
 
@@ -25,13 +27,13 @@ import { ExpenseCategory, CreateExpenseDto } from '../../types/expense.types';
 
         <form (ngSubmit)="onSubmit()" style="display: flex; flex-direction: column; gap: 16px;">
           <div>
-            <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 6px;">Nombre / Concepto</label>
+            <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 6px;">Descripción / Concepto</label>
             <input 
               type="text" 
-              [(ngModel)]="name" 
-              name="name" 
+              [(ngModel)]="description" 
+              name="description" 
               required 
-              placeholder="Ej. Supermercado La Torre"
+              placeholder="Ej. Ahorro quincenal, Bono navideño"
               style="width: 100%; background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 12px; color: #16223f; outline: none;"
             />
           </div>
@@ -51,27 +53,13 @@ import { ExpenseCategory, CreateExpenseDto } from '../../types/expense.types';
 
           <div>
             <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 6px;">Categoría</label>
-            <select 
+            <input 
+              type="text" 
               [(ngModel)]="category" 
               name="category" 
+              placeholder="Fondo de Ahorro"
               style="width: 100%; background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 12px; color: #16223f; outline: none;"
-            >
-              <option value="SERVICIOS">Servicios</option>
-              <option value="TRANSPORTE">Transporte</option>
-              <option value="SUPER_MERCADO">Supermercado</option>
-              <option value="OTROS">Otros</option>
-            </select>
-          </div>
-
-          <div>
-            <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 6px;">Descripción (Opcional)</label>
-            <textarea 
-              [(ngModel)]="description" 
-              name="description" 
-              rows="3"
-              placeholder="Detalles adicionales..."
-              style="width: 100%; background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 12px; color: #16223f; outline: none; resize: vertical;"
-            ></textarea>
+            />
           </div>
 
           <div style="display: flex; justify-content: flex-end; gap: 12px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
@@ -96,44 +84,52 @@ import { ExpenseCategory, CreateExpenseDto } from '../../types/expense.types';
     </div>
   `
 })
-export class ExpenseModalComponent {
+export class SavingsModalComponent implements OnInit {
+  @Input() savingToEdit: Saving | null = null;
   @Output() close = new EventEmitter<void>();
   @Output() saveSuccess = new EventEmitter<void>();
 
-  private expenseService = inject(ExpenseService);
+  private savingsService = inject(SavingsService);
 
-  name = '';
-  amount: number | null = null;
-  category: ExpenseCategory = 'OTROS';
   description = '';
+  amount: number | null = null;
+  category = 'Fondo de Ahorro';
 
   isLoading = signal(false);
   errorMessage = signal<string | null>(null);
 
+  ngOnInit() {
+    if (this.savingToEdit) {
+      this.description = this.savingToEdit.description;
+      this.amount = this.savingToEdit.amount;
+      this.category = this.savingToEdit.category || 'Fondo de Ahorro';
+    }
+  }
+
   onSubmit() {
-    if (!this.name.trim() || this.amount === null || this.amount <= 0) {
-      this.errorMessage.set('Por favor, ingresa un nombre y un monto válido.');
+    if (!this.description.trim() || this.amount === null || this.amount <= 0) {
+      this.errorMessage.set('Por favor, ingresa una descripción y un monto válido.');
       return;
     }
 
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
-    const dto: CreateExpenseDto = {
-      name: this.name.trim(),
+    const dto: CreateSavingDto = {
+      description: this.description.trim(),
       amount: Number(this.amount),
-      category: this.category,
-      description: this.description.trim() ? this.description.trim() : null
+      category: this.category.trim() || 'Fondo de Ahorro'
     };
 
-    this.expenseService.create(dto).subscribe({
+    // Si en el futuro agregas endpoint de update, puedes manejarlo aquí. Por ahora hace create.
+    this.savingsService.create(dto).subscribe({
       next: () => {
         this.isLoading.set(false);
         this.saveSuccess.emit();
       },
       error: (err) => {
         this.isLoading.set(false);
-        this.errorMessage.set(err.error?.error || 'Error al guardar el gasto');
+        this.errorMessage.set(err.error?.error || 'Error al registrar el ahorro');
       }
     });
   }
