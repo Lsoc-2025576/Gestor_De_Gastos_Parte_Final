@@ -1,0 +1,103 @@
+// Generator de Prisma Client 
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Configuracion de la base de datos (PostgreSQL)
+datasource db {
+  provider = "postgresql"
+}
+
+// Enum para los roles de usuario.
+enum UserRole {
+  CLIENTE
+  ADMIN
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String   // Hash de bcrypt, NUNCA texto plano
+  role      UserRole @default(CLIENTE)  // Enum tipado: solo CLIENTE o ADMIN
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")  // Se actualiza automaticamente en cada cambio
+  incomes   Income[]
+  expenses  Expense[]
+  savings   Savings[]
+
+  @@map("users")
+}
+
+enum IncomeType {
+  FIJO
+  VARIADO
+}
+
+enum IncomeClassification {
+  SUELDO
+  CAPITAL
+  SERVICIO_FACTURADO
+  VENTA_ACTIVO
+}
+
+enum IncomeRegime {
+  PEQUENO_CONTRIBUYENTE
+  OPCIONAL_SIMPLIFICADO
+}
+
+model Income {
+  id             Int                   @id @default(autoincrement())
+  name           String
+  amount         Decimal               @db.Decimal(10, 2)
+  type           IncomeType            @default(FIJO)
+  classification IncomeClassification  @default(SUELDO)
+  regime         IncomeRegime?
+  date           DateTime              @default(now())
+  description    String?
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("incomes")
+}
+
+enum ExpenseCategory {
+  SERVICIOS
+  TRANSPORTE
+  SUPER_MERCADO
+  OTROS
+}
+
+model Expense {
+  id          Int             @id @default(autoincrement())
+  name        String
+  amount      Decimal         @db.Decimal(10, 2)
+  category    ExpenseCategory @default(OTROS)
+  date        DateTime        @default(now())
+  description String?
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("expenses")
+}
+
+model Savings {
+  id          Int      @id @default(autoincrement())
+  description String
+  amount      Float    @db.DoublePrecision
+  category    String   @default("Fondo de Ahorro")
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("savings")
+}

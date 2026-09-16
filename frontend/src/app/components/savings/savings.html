@@ -1,0 +1,127 @@
+<div class="app-shell">
+
+  <!-- Sidebar unificada -->
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="assets/logo_bitcore-removebg-preview.png" alt="Bitcore Logo" class="brand-logo-img">
+      <span class="brand-name">BITCORE</span>
+    </div>
+
+    <nav class="nav-menu">
+      <a class="nav-item" routerLink="/dashboard">
+        <img src="assets/Icono_inicio.png" alt="Inicio" class="nav-icon">
+        INICIO
+      </a>
+      <a class="nav-item" routerLink="/ingresos">
+        <img src="assets/icono_ingreso.png" alt="Ingresos" class="nav-icon">
+        INGRESOS
+      </a>
+      <a class="nav-item" routerLink="/gastos">
+        <img src="assets/Icono__gastos_1.png" alt="Gastos" class="nav-icon">
+        GASTOS
+      </a>
+      <a class="nav-item active" routerLink="/ahorro">
+        <img src="assets/Iconos_cuenta_ahorro.png" alt="Ahorro" class="nav-icon">
+        CUENTA DE AHORRO
+      </a>
+    </nav>
+
+    <button class="logout-btn" (click)="logout()">Cerrar Sesion</button>
+  </aside>
+
+  <!-- Contenido principal -->
+  <div class="main-area">
+
+    <header class="topbar">
+      <h1 class="topbar-title">CUENTA DE AHORRO</h1>
+    </header>
+
+    <main class="content">
+
+      <!-- TARJETAS SUPERIORES -->
+      <section class="summary-cards">
+        <div class="summary-card">
+          <p class="summary-label">AHORRO TOTAL</p>
+          <p class="summary-value" style="color: #16a34a;">Q. {{ stats()?.totalSavings | number:'1.2-2' }}</p>
+        </div>
+
+        <div class="summary-card">
+          <p class="summary-label">AHORRO DEL MES</p>
+          <p class="summary-value" style="color: #0284c7;">Q. {{ stats()?.monthlySavings | number:'1.2-2' }}</p>
+        </div>
+
+        <div class="summary-card">
+          <p class="summary-label">META ANUAL (Q15,000)</p>
+          <p class="summary-value" style="color: #f59e0b;">{{ stats()?.percentage || 0 }}%</p>
+        </div>
+      </section>
+
+      <!-- REJILLA INFERIOR -->
+      <section class="lower-grid">
+        
+        <!-- Panel Izquierdo: Historial de Ahorros -->
+        <div class="panel">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 class="panel-title" style="margin: 0;">HISTORIAL DE AHORROS</h3>
+            <button class="nav-item" style="width: auto; height: 38px; padding: 0 16px; background-color: #16223f; color: #ffffff; font-size: 13px; border-radius: 8px;" (click)="openNewModal()">+ Nuevo Ahorro</button>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 12px; max-height: 380px; overflow-y: auto;">
+            @if (savings().length === 0) {
+              <div style="text-align: center; padding: 32px; color: #9aa3b2; font-style: italic;">
+                No hay registros de ahorros todavía.
+              </div>
+            } @else {
+              @for (item of savings(); track item.id) {
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background-color: #f8fafc; border: 1px solid #eef1f6; border-radius: 10px; cursor: pointer;" (click)="openEditModal(item)" title="Click para editar">
+                  <div>
+                    <span style="font-size: 14px; font-weight: 700; color: #16223f; display: block;">{{ item.description }}</span>
+                    <span style="font-size: 11px; color: #9aa3b2;">{{ item.category }} · {{ item.date | date:'dd/MM/yyyy' }}</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="color: #16a34a; font-weight: 800; font-size: 14px;">+Q. {{ item.amount | number:'1.2-2' }}</span>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+        </div>
+
+        <!-- Panel Derecho: Progreso de Meta -->
+        <div class="panel">
+          <h3 class="panel-title">PROGRESO DE META ANUAL</h3>
+
+          <div style="display: flex; flex-direction: column; gap: 20px; padding-top: 10px;">
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; font-weight: 700;">
+                <span style="color: #16223f;">Meta Alcanzada</span>
+                <span style="color: #6b7280;">Q. {{ stats()?.totalSavings | number:'1.2-2' }} / Q. 15,000.00</span>
+              </div>
+              <div class="meta-bar-bg">
+                <div class="meta-bar-fill" [style.width.%]="stats()?.percentage" style="background-color: #16a34a;"></div>
+              </div>
+            </div>
+
+            <div style="background-color: #f8fafc; border: 1px solid #eef1f6; border-radius: 10px; padding: 16px; text-align: center;">
+              <span style="font-size: 12px; color: #6b7280; display: block; font-weight: 600; margin-bottom: 4px;">Faltante para la Meta</span>
+              <span style="font-size: 20px; font-weight: 800; color: #16223f;">
+                Q. {{ ((15000 - (stats()?.totalSavings || 0)) > 0 ? (15000 - (stats()?.totalSavings || 0)) : 0) | number:'1.2-2' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- Modal para Crear / Editar Ahorro -->
+@if (isModalOpen()) {
+  <app-savings-modal
+    [savingToEdit]="selectedSavingForEdit()"
+    (close)="closeModal()"
+    (saveSuccess)="onSaveSuccess()">
+  </app-savings-modal>
+}

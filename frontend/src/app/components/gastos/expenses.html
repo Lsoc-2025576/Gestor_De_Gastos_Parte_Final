@@ -1,0 +1,142 @@
+<div class="app-shell">
+
+  <!-- Sidebar unificada -->
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="assets/logo_bitcore-removebg-preview.png" alt="Bitcore Logo" class="brand-logo-img">
+      <span class="brand-name">BITCORE</span>
+    </div>
+
+    <nav class="nav-menu">
+      <a class="nav-item" routerLink="/dashboard">
+        <img src="assets/Icono_inicio.png" alt="Inicio" class="nav-icon">
+        INICIO
+      </a>
+      <a class="nav-item" routerLink="/ingresos">
+        <img src="assets/icono_ingreso.png" alt="Ingresos" class="nav-icon">
+        INGRESOS
+      </a>
+      <a class="nav-item active" routerLink="/gastos">
+        <img src="assets/Icono__gastos_1.png" alt="Gastos" class="nav-icon">
+        GASTOS
+      </a>
+      <a class="nav-item" routerLink="/ahorro">
+        <img src="assets/Iconos_cuenta_ahorro.png" alt="Ahorro" class="nav-icon">
+        CUENTA DE AHORRO
+      </a>
+    </nav>
+
+    <button class="logout-btn" (click)="logout()">Cerrar Sesion</button>
+  </aside>
+
+  <!-- Contenido principal -->
+  <div class="main-area">
+
+    <header class="topbar">
+      <h1 class="topbar-title">GESTOR DE GASTOS</h1>
+    </header>
+
+    <main class="content">
+
+      <!-- TARJETAS SUPERIORES -->
+      <section class="summary-cards">
+        <div class="summary-card">
+          <p class="summary-label">DISPONIBLE DEL MES</p>
+          <p class="summary-value" style="color: #16a34a;">Q. 4,320.00</p>
+        </div>
+
+        <div class="summary-card">
+          <p class="summary-label">GASTOS DEL MES</p>
+          <p class="summary-value" style="color: #dc2626;">Q. {{ totalGastos() | number:'1.2-2' }}</p>
+        </div>
+
+        <div class="summary-card">
+          <p class="summary-label">AHORRO DESTINADO</p>
+          <p class="summary-value" style="color: #f59e0b;">Q. 1,500.00</p>
+        </div>
+      </section>
+
+      <!-- REJILLA INFERIOR -->
+      <section class="lower-grid">
+        
+        <!-- Panel Izquierdo: Listado -->
+        <div class="panel">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 class="panel-title" style="margin: 0;">REGISTRO DE GASTOS RECIENTES</h3>
+            <button class="nav-item" style="width: auto; height: 38px; padding: 0 16px; background-color: #16223f; color: #ffffff; font-size: 13px; border-radius: 8px;" (click)="openNewModal()">+ Nuevo Gasto</button>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 12px; max-height: 380px; overflow-y: auto;">
+            @if (expenses().length === 0) {
+              <div style="text-align: center; padding: 32px; color: #9aa3b2; font-style: italic;">
+                No hay gastos registrados todavía.
+              </div>
+            } @else {
+              @for (exp of expenses(); track exp.id) {
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background-color: #f8fafc; border: 1px solid #eef1f6; border-radius: 10px;">
+                  <div>
+                    <span style="font-size: 14px; font-weight: 700; color: #16223f; display: block;">{{ exp.name }}</span>
+                    <span style="font-size: 11px; color: #9aa3b2;">{{ exp.category }} · {{ exp.date | date:'dd/MM/yyyy' }}</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="color: #dc2626; font-weight: 800; font-size: 14px;">-Q. {{ exp.amount | number:'1.2-2' }}</span>
+                    <button (click)="deleteExpense(exp.id)" style="background: none; border: none; cursor: pointer; font-size: 14px;" title="Eliminar">🗑️</button>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+        </div>
+
+        <!-- Panel Derecho: Categorías -->
+        <div class="panel">
+          <h3 class="panel-title">GASTOS POR CATEGORÍA</h3>
+
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; font-weight: 700;">
+                <span style="color: #16223f;">Servicios</span>
+                <span style="color: #6b7280;">Q. {{ gastosPorCategoria()['SERVICIOS'] | number:'1.2-2' }}</span>
+              </div>
+              <div class="meta-bar-bg"><div class="meta-bar-fill" [style.width.%]="totalGastos() > 0 ? (gastosPorCategoria()['SERVICIOS'] / totalGastos()) * 100 : 0" style="background-color: #0284c7;"></div></div>
+            </div>
+
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; font-weight: 700;">
+                <span style="color: #16223f;">Transporte</span>
+                <span style="color: #6b7280;">Q. {{ gastosPorCategoria()['TRANSPORTE'] | number:'1.2-2' }}</span>
+              </div>
+              <div class="meta-bar-bg"><div class="meta-bar-fill" [style.width.%]="totalGastos() > 0 ? (gastosPorCategoria()['TRANSPORTE'] / totalGastos()) * 100 : 0" style="background-color: #d97706;"></div></div>
+            </div>
+
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; font-weight: 700;">
+                <span style="color: #16223f;">Supermercado</span>
+                <span style="color: #6b7280;">Q. {{ gastosPorCategoria()['SUPER_MERCADO'] | number:'1.2-2' }}</span>
+              </div>
+              <div class="meta-bar-bg"><div class="meta-bar-fill" [style.width.%]="totalGastos() > 0 ? (gastosPorCategoria()['SUPER_MERCADO'] / totalGastos()) * 100 : 0" style="background-color: #dc2626;"></div></div>
+            </div>
+
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; font-weight: 700;">
+                <span style="color: #16223f;">Otros</span>
+                <span style="color: #6b7280;">Q. {{ gastosPorCategoria()['OTROS'] | number:'1.2-2' }}</span>
+              </div>
+              <div class="meta-bar-bg"><div class="meta-bar-fill" [style.width.%]="totalGastos() > 0 ? (gastosPorCategoria()['OTROS'] / totalGastos()) * 100 : 0" style="background-color: #7c3aed;"></div></div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- MODAL -->
+@if (isModalOpen()) {
+  <app-expense-modal 
+    (close)="closeModal()" 
+    (saveSuccess)="onSaveSuccess()">
+  </app-expense-modal>
+}
