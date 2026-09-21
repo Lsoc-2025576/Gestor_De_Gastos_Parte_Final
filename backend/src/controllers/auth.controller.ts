@@ -2,6 +2,10 @@ import { type Request, type Response } from 'express';
 import { AuthService } from '../services/auth.services.js';
 import { type AuthenticatedRequest } from '../middlewares/auth.middleware.js';
 import { ValidationError } from '../middlewares/error-handler.middleware.js';
+import { OAuth2Client } from 'google-auth-library';
+
+// Cliente de Google configurado con tu Client ID real
+const client = new OAuth2Client('459323739559-mr6p05eue5kpo6prkl2fjjgftnc2sl5k.apps.googleusercontent.com');
 
 function getCookieMaxAge(): number {
   const expiresIn = process.env.JWT_EXPIRES_IN || '8h';
@@ -75,7 +79,7 @@ function validateRegisterBody(body: any): { name: string; email: string; passwor
     throw new ValidationError(errors.join(' | '));
   }
 
-  return { name: name.trim(), email: email.trim(), password };
+  return { name: name.trim(), email: name.trim() ? email.trim() : '', password };
 }
 
 function validateLoginBody(body: any): { email: string; password: string } {
@@ -116,6 +120,44 @@ export class AuthController {
       message: 'Inicio de sesion exitoso',
       data: { user },
     });
+  }
+
+  static async googleLogin(req: Request, res: Response) {
+    try {
+      const { idToken } = req.body;
+
+      if (!idToken) {
+        return res.status(400).json({ success: false, message: 'Token de Google requerido' });
+      }
+
+      // Verificar el token con los servidores de Google usando tu Client ID
+      const ticket = await client.verifyIdToken({
+        idToken: idToken,
+        audience: '459323739559-mr6p05eue5kpo6prkl2fjjgftnc2sl5k.apps.googleusercontent.com',
+      });
+
+      const payload = ticket.getPayload();
+      const email = payload?.email;
+      const name = payload?.name;
+
+      if (!email || !name) {
+        return res.status(400).json({ success: false, message: 'No se pudo obtener información del usuario de Google' });
+      }
+
+      // Procesar el login o registro automático a través del servicio
+      const { user, token } = await AuthService.googleLoginUser({ email, name });
+
+      res.cookie('token', token, COOKIE_OPTIONS);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Inicio de sesión con Google exitoso',
+        data: { user },
+      });
+    } catch (error) {
+      console.error('Error en Google Auth:', error);
+      return res.status(401).json({ success: false, message: 'Token de Google inválido o expirado' });
+    }
   }
 
   static logout(req: Request, res: Response) {

@@ -6,10 +6,9 @@ import { ConflictError, UnauthorizedError } from '../middlewares/error-handler.m
 
 /**
  * Service de autenticacion.
- * Contiene la logica de negocio: verificar emails, hashear passwords, generar JWTS etc.
+ * Contiene la logica de negocio: verificar emails, hashear passwords, generar JWTS etc.[cite: 9]
  * 
  */
-
 
 function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
@@ -29,12 +28,12 @@ export class AuthService {
    * 1. Verificar que el email no exista
    * 2. Hashear la contrasena con bcrypt
    * 3. Crear el usuario en la DB
-   * 4. Devolver el usuario SIN la contrasena
+   * 4. Devolver el usuario SIN la contrasena[cite: 9]
    */
   static async registerUser(userData: IUser): Promise<UserResponse> {
     const { name, email, password, role } = userData;
 
-    // Paso 1 Verificar que el email no este registrado
+    // Paso 1 Verificar que el email no este registrado[cite: 9]
     const userExist = await prisma.user.findUnique({
       where: { email },
     });
@@ -43,10 +42,10 @@ export class AuthService {
       throw new ConflictError('El correo electronico ya esta registrado.');
     }
 
-    // Paso 2 Hashear la contrasena 
+    // Paso 2 Hashear la contrasena[cite: 9]
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Paso 3 Crear usuario
+    // Paso 3 Crear usuario[cite: 9]
     const newUser = await prisma.user.create({
       data: {
         name,
@@ -63,7 +62,7 @@ export class AuthService {
       },
     });
 
-    // Paso 4: Devolver datos seguros
+    // Paso 4: Devolver datos seguros[cite: 9]
     return newUser as UserResponse;
   }
 
@@ -73,35 +72,78 @@ export class AuthService {
    * 1. Buscar usuario por email
    * 2. Comparar contrasena con bcrypt
    * 3. Generar JWT
-   * 4. Devolver usuario + token
+   * 4. Devolver usuario + token[cite: 9]
    */
   static async loginUser(
     email: string,
     passwordAttempt: string
   ): Promise<{ user: UserResponse; token: string }> {
-    // Paso 1 Buscar usuario (incluye password hash para comparar)
+    // Paso 1 Buscar usuario (incluye password hash para comparar)[cite: 9]
     const user = await prisma.user.findUnique({
       where: { email },
     });
 
     if (!user) {
-      // Mensaje 
+      // Mensaje[cite: 9]
       throw new UnauthorizedError('Credenciales invalidas.');
     }
 
-    // Paso 2 Comparar contrasenas
+    // Paso 2 Comparar contrasenas[cite: 9]
     const isPasswordValid = await bcrypt.compare(passwordAttempt, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedError('Credenciales invalidas.');
     }
 
-    // Paso 3 Crea firmar JWT
+    // Paso 3 Crea firmar JWT[cite: 9]
     const payload: UserPayload = {
       id: user.id,
       email: user.email,
       role: user.role as 'CLIENTE' | 'ADMIN',
     };
 
+    const token = jwt.sign(payload, getJwtSecret(), { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions);
+
+    return {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role as 'CLIENTE' | 'ADMIN',
+      },
+      token,
+    };
+  }
+
+  /**
+   * Inicia sesion o registra automáticamente a un usuario mediante Google OAuth.
+   */
+  static async googleLoginUser(googleData: { email: string; name: string }): Promise<{ user: UserResponse; token: string }> {
+    const { email, name } = googleData;
+
+    let user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    // Si el usuario no existe en la base de datos, lo registramos automáticamente para Google
+    if (!user) {
+      // Generamos un password aleatorio o vacío ya que entra por Google
+      const dummyPassword = await bcrypt.hash(Math.random().toString(36), 10);
+      
+      user = await prisma.user.create({
+        data: {
+          name,
+          email,
+          password: dummyPassword,
+          role: 'CLIENTE',
+        },
+      });
+    }
+
+    const payload: UserPayload = {
+      id: user.id,
+      email: user.email,
+      role: user.role as 'CLIENTE' | 'ADMIN',
+    };
 
     const token = jwt.sign(payload, getJwtSecret(), { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions);
 
